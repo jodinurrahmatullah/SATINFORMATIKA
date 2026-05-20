@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SAT Informatika - SMPN 38 Bandar Lampung</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Mengunci fitur copy-paste dan seleksi teks demi keamanan ujian */
+        body {
+            user-select: none;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+            -moz-user-select: none;
+            background-color: #f3f4f6;
+        }
+        /* Custom scrollbar untuk daftar soal */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Radio button custom */
+        .option-input:checked + label {
+            background-color: #eff6ff;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+    </style>
+</head>
+<body class="text-gray-800 font-sans h-screen flex flex-col overflow-hidden">
+
+    <!-- ==========================================
+         PENTING: PASTE URL GOOGLE SCRIPT DI SINI
+         ========================================== -->
+    <script>
+        // URL Web App dari Google Apps Script Anda (Tetap Dipertahankan)
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw9VcyjD1xQvpUboG3QMexx2zYIM4M72bffZj8kgZgX5ECkHupcffRCZ6te6ZQE2bUT/exec"; 
+    </script>
+
+    <!-- SCREEN 1: LOGIN / FORM DATA DIRI -->
+    <div id="login-screen" class="flex-1 flex items-center justify-center p-4 h-full bg-gradient-to-br from-blue-700 to-indigo-950">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 md:p-8 w-full max-w-md border border-white/20">
+            <div class="text-center mb-6">
+                <!-- Logo Tut Wuri Handayani -->
+                <div class="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-3 shadow-inner">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Logo_Tut_Wuri_Handayani.svg/200px-Logo_Tut_Wuri_Handayani.svg.png" alt="Logo Tut Wuri" class="h-14 mx-auto" onerror="this.style.display='none'">
+                </div>
+                <h1 class="text-2xl font-black text-gray-900 tracking-tight">SUMATIF AKHIR TAHUN</h1>
+                <p class="text-xs font-bold text-blue-600 uppercase tracking-widest mt-1">SMPN 38 BANDAR LAMPUNG</p>
+                <div class="h-1 w-20 bg-blue-600 mx-auto mt-3 rounded-full"></div>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Nama Lengkap Siswa</label>
+                    <input type="text" id="student-name" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition" placeholder="Masukkan nama lengkap" required autocomplete="off">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Kelas</label>
+                    <select id="student-class" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition bg-white">
+                        <option value="" disabled selected>Pilih Kelas</option>
+                        <option value="8 A">Kelas 8 A</option>
+                        <option value="8 B">Kelas 8 B</option>
+                    </select>
+                </div>
+                <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-xl text-xs text-yellow-900 leading-relaxed">
+                    <p class="font-bold mb-1">Peringatan Keamanan (Anti-Curang):</p>
+                    <ul class="list-disc pl-4 space-y-1">
+                        <li>Dilarang keluar tab, berpindah aplikasi, atau membuka notifikasi selama ujian.</li>
+                        <li>Sistem mendeteksi aktivitas mencurigakan secara otomatis.</li>
+                        <li>Batas toleransi kesalahan maksimal <strong>3 kali</strong>. Jika dilanggar, ujian akan langsung di-submit paksa oleh sistem!</li>
+                    </ul>
+                </div>
+                <button onclick="startExam()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-xl transition duration-200 shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 text-base">
+                    Mulai Ujian Sekarang
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCREEN 2: INTERFACES UJIAN -->
+    <div id="exam-screen" class="hidden h-full flex-col bg-gray-50 relative">
+        <!-- Header Utama -->
+        <header class="bg-white border-b border-gray-200 px-4 py-3 flex justify-between items-center z-10 shrink-0 shadow-sm">
+            <div class="flex items-center gap-3">
+                <div class="hidden sm:block w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center">
+                    <span class="font-bold text-blue-600">SAT</span>
+                </div>
+                <div>
+                    <p id="display-name" class="font-bold text-gray-950 text-sm md:text-base truncate max-w-[150px] md:max-w-xs"></p>
+                    <p id="display-class" class="text-xs text-gray-500 font-semibold"></p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <!-- Sisa Waktu -->
+                <div class="bg-blue-50 border border-blue-100 rounded-xl px-3 py-1.5 text-center flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-blue-600 animate-ping"></span>
+                    <div>
+                        <p class="text-[10px] text-gray-500 uppercase font-bold leading-none">Sisa Waktu</p>
+                        <p id="timer-display" class="font-mono text-base md:text-lg font-black text-blue-700 leading-none mt-1">90:00</p>
+                    </div>
+                </div>
+                <!-- Tombol Menu Grid Mobile -->
+                <button onclick="toggleGrid()" class="md:hidden bg-gray-100 hover:bg-gray-200 p-2 rounded-xl transition">
+                    <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Area Kerja Utama -->
+        <div class="flex-1 flex overflow-hidden relative">
+            <!-- Lembar Soal -->
+            <main class="flex-1 overflow-y-auto p-4 md:p-6 pb-28 md:pb-8">
+                <div class="max-w-3xl mx-auto">
+                    <!-- Status Pelanggaran & Nomor Soal -->
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-sm font-bold text-gray-500">Soal <span id="current-q-num" class="text-blue-600 text-lg">1</span> dari 50</span>
+                        <span id="warning-badge" class="bg-red-50 text-red-600 border border-red-200 text-xs font-extrabold px-3 py-1.5 rounded-full flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-red-600 animate-pulse"></span>
+                            Pelanggaran: <span id="warn-count">0</span>/3
+                        </span>
+                    </div>
+
+                    <!-- Card Soal -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-200/80 p-5 md:p-6 transition-all duration-200">
+                        <!-- Kontainer Media Gambar (SVG) -->
+                        <div id="question-media-container" class="mb-5 bg-slate-50 p-4 rounded-xl border border-slate-100 hidden flex justify-center">
+                            <!-- SVG atau Media Soal lainnya di-inject di sini -->
+                        </div>
+
+                        <div id="question-text" class="text-base md:text-lg text-gray-900 font-semibold mb-6 leading-relaxed">
+                            <!-- Pertanyaan dimuat di sini -->
+                        </div>
+
+                        <div id="options-container" class="space-y-3">
+                            <!-- Opsi Pilihan Ganda atau Pencocokan dimuat di sini -->
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Sidebar Panel Daftar Soal (Mobile: Drawer sliding, Desktop: Fixed sidebar) -->
+            <aside id="question-grid-sidebar" class="w-72 bg-white shadow-2xl border-l border-gray-200 shrink-0 flex flex-col absolute right-0 top-0 bottom-0 transform translate-x-full md:translate-x-0 md:relative transition-transform duration-300 z-20">
+                <div class="p-4 border-b flex justify-between items-center bg-gray-50">
+                    <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                        Navigasi Soal
+                    </h3>
+                    <button onclick="toggleGrid()" class="md:hidden text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+                </div>
+                <div class="p-4 overflow-y-auto flex-1">
+                    <div id="grid-container" class="grid grid-cols-5 gap-2">
+                        <!-- Tombol nomor soal dimasukkan via JS -->
+                    </div>
+                </div>
+                <div class="p-4 border-t bg-gray-50 text-[11px] text-gray-500 space-y-2">
+                    <div class="flex items-center gap-2"><span class="w-3.5 h-3.5 bg-blue-600 rounded-md"></span> Sedang dibuka</div>
+                    <div class="flex items-center gap-2"><span class="w-3.5 h-3.5 bg-green-600 rounded-md"></span> Sudah dijawab</div>
+                    <div class="flex items-center gap-2"><span class="w-3.5 h-3.5 bg-white border border-gray-300 rounded-md"></span> Belum dijawab</div>
+                </div>
+            </aside>
+        </div>
+
+        <!-- Footer Navigasi -->
+        <footer class="bg-white border-t border-gray-200 p-4 absolute bottom-0 left-0 w-full md:w-[calc(100%-18rem)] shrink-0 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+            <div class="max-w-3xl mx-auto flex justify-between items-center gap-3">
+                <button id="btn-prev" onclick="prevQuestion()" class="px-5 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center gap-1.5 text-sm">
+                    &larr; <span class="hidden sm:inline">Sebelumnya</span>
+                </button>
+                <button id="btn-next" onclick="nextQuestion()" class="px-6 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition flex items-center gap-1.5 text-sm">
+                    <span class="hidden sm:inline">Selanjutnya</span> &rarr;
+                </button>
+                <button id="btn-submit" onclick="attemptSubmit()" class="hidden px-6 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition shadow-md animate-pulse text-sm">
+                    Selesai Ujian
+                </button>
+            </div>
+        </footer>
+    </div>
+
+    <!-- SCREEN 3: HASIL & PEMBAHASAN -->
+    <div id="result-screen" class="hidden flex-1 overflow-y-auto p-4 md:p-8 bg-slate-50">
+        <div class="max-w-4xl mx-auto">
+            <!-- Score Card -->
+            <div class="bg-white rounded-3xl shadow-xl p-6 md:p-8 mb-8 text-center border-t-[12px] border-blue-600 relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-4 text-xs font-bold text-blue-100 select-none">SAT 2026</div>
+                <h2 class="text-3xl font-black text-gray-900 mb-2">Ujian Selesai!</h2>
+                <p id="res-identity" class="text-gray-500 font-semibold mb-6"></p>
+                
+                <div class="grid grid-cols-3 gap-3 max-w-md mx-auto mb-8">
+                    <div class="bg-green-50 rounded-2xl p-4 border border-green-100">
+                        <p class="text-[10px] text-green-700 font-black uppercase tracking-wider mb-1">Benar</p>
+                        <p id="res-correct" class="text-2xl md:text-3xl font-black text-green-600">0</p>
+                    </div>
+                    <div class="bg-red-50 rounded-2xl p-4 border border-red-100">
+                        <p class="text-[10px] text-red-700 font-black uppercase tracking-wider mb-1">Salah</p>
+                        <p id="res-wrong" class="text-2xl md:text-3xl font-black text-red-600">0</p>
+                    </div>
+                    <div class="bg-blue-50 rounded-2xl p-4 border border-blue-100">
+                        <p class="text-[10px] text-blue-700 font-black uppercase tracking-wider mb-1">Nilai</p>
+                        <p id="res-score" class="text-3xl md:text-4xl font-black text-blue-700">0</p>
+                    </div>
+                </div>
+                
+                <div id="sync-status" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-yellow-100 text-yellow-800 text-xs font-bold">
+                    <svg class="animate-spin h-4 w-4 text-yellow-700" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Menyimpan nilai ke Google Sheets...
+                </div>
+            </div>
+
+            <!-- Review Section -->
+            <h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                Hasil & Analisis Pembahasan Soal
+            </h3>
+            <div id="review-container" class="space-y-4">
+                <!-- Data review tiap soal dimasukkan via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL POPUP CUSTOM (Untuk peringatan kecurangan / konfirmasi submit) -->
+    <div id="modal-overlay" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center border border-gray-100">
+            <div id="modal-icon" class="mb-4 flex justify-center"></div>
+            <h3 id="modal-title" class="text-lg font-bold text-gray-950 mb-2"></h3>
+            <p id="modal-desc" class="text-gray-600 text-sm mb-6 leading-relaxed"></p>
+            <div id="modal-actions" class="flex flex-col sm:flex-row justify-center gap-2.5"></div>
+        </div>
+    </div>
+
+    <script>
+        // ==============================================================================
+        // DATA SOAL (TEPAT 50 SOAL: 45 PILIHAN GANDA & 5 SOAL MENCOCOKKAN SISTEM KOMPUTER)
+        // ==============================================================================
+        const questionsData = [
+            // SOAL 1: SOAL GAMBAR (TOPOLOGI STAR) - MC 1
+            { 
+                type: "multiple-choice",
+                q: "Perhatikan diagram topologi jaringan di atas. Jenis topologi jaringan yang menggunakan hub/switch sentral sebagai pusat koneksi seluruh node komputer tersebut adalah...", 
+                options: ["Topologi Bus", "Topologi Ring", "Topologi Star", "Topologi Mesh"], 
+                answer: 2, 
+                svg: `<svg viewBox="0 0 200 120" class="w-48 h-28" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Hub Sentral -->
+                        <circle cx="100" cy="60" r="12" fill="#3b82f6" stroke="#1d4ed8" stroke-width="2"/>
+                        <text x="100" y="64" font-size="8" font-weight="bold" fill="white" text-anchor="middle">HUB</text>
+                        <!-- Node-node komputer -->
+                        <circle cx="40" cy="30" r="8" fill="#cbd5e1" stroke="#64748b" stroke-width="1.5"/>
+                        <circle cx="160" cy="30" r="8" fill="#cbd5e1" stroke="#64748b" stroke-width="1.5"/>
+                        <circle cx="40" cy="90" r="8" fill="#cbd5e1" stroke="#64748b" stroke-width="1.5"/>
+                        <circle cx="160" cy="90" r="8" fill="#cbd5e1" stroke="#64748b" stroke-width="1.5"/>
+                        <circle cx="100" cy="15" r="8" fill="#cbd5e1" stroke="#64748b" stroke-width="1.5"/>
+                        <circle cx="100" cy="105" r="8" fill="#cbd5e1" stroke="#64748b" stroke-width="1.5"/>
+                        <!-- Garis Hubung -->
+                        <line x1="100" y1="48" x2="100" y2="23" stroke="#64748b" stroke-width="1.5" stroke-dasharray="2"/>
+                        <line x1="100" y1="72" x2="100" y2="97" stroke="#64748b" stroke-width="1.5" stroke-dasharray="2"/>
+                        <line x1="88" y1="54" x2="48" y2="34" stroke="#64748b" stroke-width="1.5" stroke-dasharray="2"/>
+                        <line x1="112" y1="54" x2="152" y2="34" stroke="#64748b" stroke-width="1.5" stroke-dasharray="2"/>
+                        <line x1="88" y1="66" x2="48" y2="86" stroke="#64748b" stroke-width="1.5" stroke-dasharray="2"/>
+                        <line x1="112" y1="66" x2="152" y2="86" stroke="#64748b" stroke-width="1.5" stroke-dasharray="2"/>
+                      </svg>`,
+                exp: "Topologi Star (Bintang) menempatkan hub atau switch di bagian tengah sebagai pengatur sentral komunikasi seluruh node." 
+            },
+            // MC 2
+            { q: "Perangkat keras yang berfungsi mengubah sinyal analog menjadi digital dan sebaliknya untuk koneksi internet adalah...", options: ["Modem", "Router", "Switch", "Hub"], answer: 0, exp: "Modem singkatan dari Modulator Demodulator, digunakan untuk mengubah sinyal guna transmisi data internet." },
+            // MC 3
+            { q: "Alamat numerik unik yang dimiliki oleh setiap komputer atau perangkat yang terhubung ke internet disebut...", options: ["MAC Address", "IP Address", "URL", "DNS"], answer: 1, exp: "IP Address (Internet Protocol Address) adalah alamat pengenal unik pada setiap perangkat jaringan komputer." },
+            // MC 4
+            { q: "Protokol standar yang digunakan untuk mengirim dan menerima halaman web di jaringan internet adalah...", options: ["FTP", "SMTP", "HTTP", "TCP/IP"], answer: 2, exp: "HTTP (Hypertext Transfer Protocol) bertugas mentransfer halaman web. FTP untuk file, SMTP untuk email." },
+            
+            // SOAL 5: SOAL MENCOCOKKAN 1 (HARDWARE PERIFERAL SISTEM KOMPUTER)
+            {
+                type: "matching",
+                q: "Cocokkan nama komponen periferal sistem komputer berikut dengan kategori jenis fungsionalnya yang benar!",
+                leftItems: ["Keyboard", "Monitor", "Harddisk"],
+                rightOptions: ["Perangkat Penyimpanan (Storage Device)", "Perangkat Masukan (Input Device)", "Perangkat Keluaran (Output Device)"],
+                correctMap: [1, 2, 0],
+                exp: "Keyboard adalah perangkat input (masukan) teks/instruksi. Monitor adalah perangkat output (keluaran) visual gambar. Harddisk adalah perangkat storage (penyimpanan) file data permanen."
+            },
+            
+            // MC 5
+            { q: "Langkah-langkah sistematis, logis, dan terstruktur yang disusun untuk menyelesaikan suatu masalah disebut...", options: ["Program", "Algoritma", "Konstanta", "Variabel"], answer: 1, exp: "Algoritma merupakan urutan logis langkah-langkah penyelesaian masalah yang terstruktur." },
+            // SOAL 7: SOAL GAMBAR (FLOWCHART DECISION) - MC 6
+            { 
+                type: "multiple-choice",
+                q: "Perhatikan gambar simbol flowchart di atas. Simbol berbentuk belah ketupat tersebut memiliki fungsi untuk...", 
+                options: ["Memulai atau mengakhiri suatu program", "Melakukan proses komputasi data", "Melakukan seleksi logika pengambilan keputusan (decision)", "Menginput atau menampilkan data hasil"], 
+                answer: 2, 
+                svg: `<svg viewBox="0 0 160 100" class="w-40 h-24" xmlns="http://www.w3.org/2000/svg">
+                        <polygon points="80,10 150,50 80,90 10,50" fill="#fef08a" stroke="#ca8a04" stroke-width="2"/>
+                        <text x="80" y="54" font-size="10" font-weight="bold" fill="#854d0e" text-anchor="middle">KONDISI?</text>
+                      </svg>`,
+                exp: "Simbol belah ketupat (diamond) pada flowchart merepresentasikan percabangan/pengambilan keputusan logis berdasarkan kondisi Ya/Tidak." 
+            },
+            // MC 7
+            { q: "Tindakan perundungan, pelecehan, atau intimidasi yang dilakukan menggunakan media digital atau internet disebut...", options: ["Hacking", "Carding", "Cyberbullying", "Phishing"], answer: 2, exp: "Cyberbullying adalah perundungan di dunia maya yang menyerang kondisi mental atau sosial seseorang." },
+            // MC 8
+            { q: "Berita bohong atau informasi palsu yang direkayasa agar seolah-olah terlihat benar di internet disebut...", options: ["Scam", "Hoax", "Spam", "Malware"], answer: 1, exp: "Hoax adalah informasi palsu yang sengaja dibuat untuk menyesatkan publik." },
+            // MC 9
+            { q: "Undang-Undang di Indonesia yang mengatur aspek hukum transaksi elektronik dan sanksi kejahatan siber adalah...", options: ["UU Sisdiknas", "UU Hak Cipta", "UU ITE", "UU Keterbukaan Informasi"], answer: 2, exp: "UU ITE (Informasi dan Transaksi Elektronik) adalah UU utama yang mengatur hukum aktivitas di dunia digital Indonesia." },
+            // MC 10
+            { q: "Dalam berpikir komputasional, memecahkan masalah besar menjadi bagian-bagian yang lebih kecil dan sederhana disebut...", options: ["Dekomposisi", "Abstraksi", "Pengenalan Pola", "Algoritma"], answer: 0, exp: "Dekomposisi adalah teknik memecah masalah kompleks menjadi sub-masalah kecil agar lebih mudah dikelola." },
+            // MC 11
+            { q: "Mengeliminasi informasi yang tidak penting dan fokus hanya pada informasi kunci atau utama disebut...", options: ["Dekomposisi", "Abstraksi", "Pengenalan Pola", "Algoritma"], answer: 1, exp: "Abstraksi adalah menyaring detail yang tidak penting untuk fokus pada inti permasalahan saja." },
+            // MC 12
+            { q: "Aplikasi perkantoran (office) yang paling tepat digunakan untuk mengolah data angka dan grafik adalah...", options: ["Microsoft Word", "Microsoft Excel", "Microsoft PowerPoint", "Microsoft Publisher"], answer: 1, exp: "Microsoft Excel (atau Google Sheets) adalah program pengolah angka (spreadsheet) yang sangat andal." },
+            // MC 13
+            { q: "Dalam aplikasi lembar kerja (spreadsheet), setiap penulisan rumus wajib diawali dengan tanda...", options: ["#", "$", "@", "="], answer: 3, exp: "Tanda sama dengan (=) adalah syarat wajib agar aplikasi spreadsheet mengenali input sebagai rumus/fungsi matematika." },
+            
+            // SOAL 15: SOAL MENCOCOKKAN 2 (JENIS MEMORI SISTEM KOMPUTER)
+            {
+                type: "matching",
+                q: "Cocokkan nama tipe penyimpanan/memori dalam sistem komputer berikut dengan karakteristik kinerjanya!",
+                leftItems: ["RAM", "ROM", "Harddisk"],
+                rightOptions: ["Penyimpanan besar permanen (Non-volatile) untuk OS dan file", "Penyimpanan kerja sementara (Volatile) yang diakses cepat oleh CPU", "Penyimpanan instruksi booting (BIOS) yang hanya bisa dibaca (Read-Only)"],
+                correctMap: [1, 2, 0],
+                exp: "RAM menyimpan data sementara saat sistem menyala (Volatile). ROM menyimpan firmware booting dasar (BIOS) secara permanen. Harddisk menyimpan berkas/OS jangka panjang (Non-volatile)."
+            },
+            
+            // MC 14
+            { q: "Sintaksis dasar yang digunakan untuk menampilkan teks ke layar monitor pada bahasa Python adalah...", options: ["echo", "print()", "system.out", "input()"], answer: 1, exp: "Di bahasa pemrograman Python, instruksi print() digunakan untuk mencetak keluaran ke layar." },
+            // SOAL 17: SOAL GAMBAR (GERBANG LOGIKA AND) - MC 15
+            { 
+                type: "multiple-choice",
+                q: "Perhatikan diagram gerbang logika di atas. Gerbang logika dasar yang hanya menghasilkan nilai keluaran (Output) '1' jika semua masukan (Input) bernilai '1' adalah...", 
+                options: ["Gerbang OR", "Gerbang NOT", "Gerbang AND", "Gerbang NAND"], 
+                answer: 2, 
+                svg: `<svg viewBox="0 0 160 100" class="w-40 h-20" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Input lines -->
+                        <line x1="10" y1="30" x2="50" y2="30" stroke="#1e293b" stroke-width="2"/>
+                        <line x1="10" y1="70" x2="50" y2="70" stroke="#1e293b" stroke-width="2"/>
+                        <!-- Gate Body -->
+                        <path d="M50,20 L80,20 A30,30 0 0,1 110,50 A30,30 0 0,1 80,80 L50,80 Z" fill="#93c5fd" stroke="#2563eb" stroke-width="2"/>
+                        <!-- Output Line -->
+                        <line x1="110" y1="50" x2="150" y2="50" stroke="#1e293b" stroke-width="2"/>
+                        <!-- Labels -->
+                        <text x="15" y="24" font-size="8" font-weight="bold">A</text>
+                        <text x="15" y="64" font-size="8" font-weight="bold">B</text>
+                        <text x="135" y="44" font-size="8" font-weight="bold">Y</text>
+                      </svg>`,
+                exp: "Gambar tersebut adalah simbol Gerbang Logika AND, di mana output bernilai 1 hanya jika semua inputnya bernilai 1." 
+            },
+            // MC 16
+            { q: "Perangkat memori komputer yang bersifat volatile (data hilang saat aliran listrik mati) adalah...", options: ["Harddisk", "ROM", "RAM", "Flashdisk"], answer: 2, exp: "RAM (Random Access Memory) bersifat sementara dan volatile, berguna menyimpan instruksi proses aktif." },
+            // MC 17
+            { q: "Kejahatan siber yang mencoba mencuri informasi sensitif (seperti password) dengan menyamar sebagai pihak tepercaya disebut...", options: ["Phishing", "Spam", "Ransomware", "DDoS"], answer: 0, exp: "Phishing adalah pengelabuan digital untuk memancing korban menyerahkan data sensitifnya." },
+            // MC 18
+            { q: "Untuk mencari dokumen atau informasi yang sama persis di Google Search, kata kunci diapit menggunakan tanda...", options: ["Kurung siku [ ]", "Tanda kutip ganda \" \"", "Tanda tanya ?", "Tanda pagar #"], answer: 1, exp: "Tanda kutip ganda (\"...\") digunakan untuk pencarian frasa mutlak/persis (exact match) pada mesin pencari." },
+            // MC 19
+            { q: "Jika variabel P bernilai Benar dan Q bernilai Salah, hasil operasi logika 'P AND Q' adalah...", options: ["Benar", "Salah", "Tidak Terdefinisi", "Error"], answer: 1, exp: "Operasi logika AND hanya menghasilkan nilai Benar jika kedua input bernilai Benar." },
+            // MC 20
+            { q: "Fungsi dari SUM dalam rumus aplikasi spreadsheet adalah untuk...", options: ["Mencari rata-rata", "Menjumlahkan sekelompok nilai", "Mencari nilai tertinggi", "Menghitung jumlah sel"], answer: 1, exp: "Fungsi SUM digunakan khusus untuk menjumlahkan atau menambahkan rentang nilai angka." },
+            // SOAL 23: SOAL GAMBAR (ARSITEKTUR KOMPUTER CPU) - MC 21
+            { 
+                type: "multiple-choice",
+                q: "Perhatikan diagram blok arsitektur komputer di atas. Komponen di dalam CPU yang bertugas melakukan segala perhitungan matematika dan perbandingan logika bernama...", 
+                options: ["Control Unit (CU)", "Arithmetic Logic Unit (ALU)", "Register", "RAM"], 
+                answer: 1, 
+                svg: `<svg viewBox="0 0 200 100" class="w-52 h-24" xmlns="http://www.w3.org/2000/svg">
+                        <!-- CPU Box -->
+                        <rect x="50" y="10" width="100" height="80" rx="6" fill="#f8fafc" stroke="#475569" stroke-width="2"/>
+                        <text x="100" y="24" font-size="9" font-weight="black" fill="#1e293b" text-anchor="middle">PROCESSOR (CPU)</text>
+                        <!-- Sub Units -->
+                        <rect x="60" y="32" width="35" height="25" rx="3" fill="#fed7aa" stroke="#ea580c" stroke-width="1.5"/>
+                        <text x="77.5" y="47" font-size="8" font-weight="bold" fill="#ea580c" text-anchor="middle">CU</text>
+                        
+                        <rect x="105" y="32" width="35" height="25" rx="3" fill="#bbf7d0" stroke="#16a34a" stroke-width="1.5"/>
+                        <text x="122.5" y="47" font-size="8" font-weight="bold" fill="#16a34a" text-anchor="middle">ALU</text>
+                        
+                        <rect x="60" y="63" width="80" height="20" rx="3" fill="#e2e8f0" stroke="#64748b" stroke-width="1.5"/>
+                        <text x="100" y="75" font-size="8" font-weight="bold" fill="#475569" text-anchor="middle">REGISTERS</text>
+                      </svg>`,
+                exp: "ALU (Arithmetic Logic Unit) bertugas penuh memproses operasi aritmatika dan logika pemrograman komputer." 
+            },
+            // MC 22
+            { q: "Aplikasi WhatsApp, LINE, dan Telegram termasuk ke dalam kategori perangkat lunak...", options: ["Web Browser", "Instant Messaging (Pesan Instan)", "Sistem Operasi", "Desain Grafis"], answer: 1, exp: "Aplikasi-aplikasi ini berfokus pada pengiriman pesan secara langsung dan instan." },
+            
+            // SOAL 25: SOAL MENCOCOKKAN 3 (ARSITEKTUR UTAMA CPU)
+            {
+                type: "matching",
+                q: "Cocokkan nama bagian unit pemrosesan sentral (CPU) berikut dengan tugas kinerjanya masing-masing!",
+                leftItems: ["Arithmetic Logic Unit", "Control Unit", "Registers"],
+                rightOptions: ["Pengatur lalu lintas eksekusi data dan instruksi komputer", "Penyimpanan internal kecepatan tinggi memori lokal CPU", "Pelaksana segala operasi perhitungan matematika & logika"],
+                correctMap: [2, 0, 1],
+                exp: "ALU bertugas menghitung matematika & logika. Control Unit mengarahkan lalu lintas instruksi. Registers adalah unit memori internal super cepat yang menyimpan data sementara saat sedang diproses CPU."
+            },
+            
+            // MC 23
+            { q: "Dalam Scratch atau Blockly, blok yang berulang-ulang menjalankan instruksi adalah...", options: ["If-Then", "Repeat / Loop", "Set Variable", "When Clicked"], answer: 1, exp: "Blok Repeat atau Loop mengizinkan kode dieksekusi berulang kali sesuai parameter tertentu." },
+            // MC 24
+            { q: "Ekstensi file seperti .png, .jpg, dan .bmp merupakan jenis file yang berisi data...", options: ["Teks dokumen", "Gambar / Citra", "Suara / Audio", "Video / Animasi"], answer: 1, exp: "PNG, JPG, dan BMP adalah format penyimpanan data gambar digital." },
+            // MC 25
+            { q: "Tindakan mengambil karya tulisan orang lain di internet dan mengeklaimnya sebagai buatan sendiri disebut...", options: ["Plagiarisme", "Hacking", "Phishing", "Spamming"], answer: 0, exp: "Plagiarisme adalah plagiat atau penjiplakan hak kekayaan intelektual karya orang lain tanpa izin/sumber." },
+            // MC 26
+            { q: "Domain internet resmi yang wajib digunakan oleh institusi sekolah di Indonesia adalah...", options: [".com", ".org", ".sch.id", ".go.id"], answer: 2, exp: ".sch.id khusus didedikasikan untuk jenjang sekolah di Indonesia (sch = school, id = Indonesia)." },
+            // MC 27
+            { q: "Sistem perangkat lunak yang kode sumbernya (source code) bebas dilihat, dimodifikasi, dan disebarkan disebut...", options: ["Open Source", "Proprietary Software", "Shareware", "Adware"], answer: 0, exp: "Open Source adalah perangkat lunak gratis yang kode dasarnya terbuka untuk dikembangkan bersama." },
+            // MC 28
+            { q: "Kombinasi tombol pintas (shortcut) keyboard universal untuk membatalkan perintah terakhir (Undo) adalah...", options: ["Ctrl + C", "Ctrl + V", "Ctrl + Z", "Ctrl + Y"], answer: 2, exp: "Ctrl+Z digunakan untuk membatalkan aksi terakhir (Undo). Ctrl+Y untuk Redo." },
+            // MC 29
+            { q: "Cell reference dalam rumus Excel yang dikunci dengan simbol $ sehingga posisinya tidak bergeser saat di-copy disebut...", options: ["Relatif", "Semi-Relatif", "Absolut", "Aktif"], answer: 2, exp: "Referensi Absolut (seperti $A$1) menjaga koordinat baris dan kolom agar tidak berubah saat disalin." },
+            // MC 30
+            { q: "Perangkat perusak (malware) yang menyandera data pengguna dengan cara mengenkripsi lalu meminta tebusan uang disebut...", options: ["Adware", "Trojan", "Ransomware", "Worm"], answer: 2, exp: "Ransomware (dari kata ransom = tebusan) memblokir akses ke file korban lalu meminta bayaran pemulihan." },
+            // MC 31
+            { q: "Ukuran standar kecepatan transfer data dalam jaringan internet dinyatakan dalam...", options: ["Hertz (Hz)", "Byte (B)", "Bit per second (bps)", "Pixel"], answer: 2, exp: "Kecepatan transfer data digital diukur dalam bit per detik atau bit per second (bps)." },
+            
+            // SOAL 35: SOAL MENCOCOKKAN 4 (KATEGORI PERANGKAT LUNAK / SOFTWARE)
+            {
+                type: "matching",
+                q: "Cocokkan klasifikasi jenis perangkat lunak (software) berikut dengan contoh aplikasinya yang tepat!",
+                leftItems: ["Sistem Operasi (OS)", "Aplikasi Perkantoran", "Utilitas Pemeliharaan"],
+                rightOptions: ["Antivirus, Disk Defragmenter", "Microsoft Excel, Google Sheets", "Microsoft Windows, Linux Mint"],
+                correctMap: [2, 1, 0],
+                exp: "Sistem Operasi mengelola sistem dasar (e.g. Windows). Aplikasi melaksanakan kebutuhan produktif (e.g. Excel). Perangkat utilitas merawat stabilitas sistem (e.g. Antivirus)."
+            },
+            
+            // MC 32
+            { q: "Menemukan kesamaan karakteristik atau pola dari masalah-masalah sebelumnya dalam berpikir komputasional disebut...", options: ["Abstraksi", "Dekomposisi", "Pengenalan Pola", "Algoritma"], answer: 2, exp: "Pengenalan Pola mencari kemiripan dalam sekumpulan masalah agar solusi yang ada bisa diadaptasi." },
+            // MC 33
+            { q: "Alat pemancar sinyal nirkabel agar perangkat seluler dapat terhubung ke jaringan internet nirkabel (Wi-Fi) adalah...", options: ["Hub", "Switch", "Access Point / Router Wi-Fi", "Kabel UTP"], answer: 2, exp: "Access Point berfungsi memancarkan sinyal gelombang radio Wi-Fi agar perangkat terhubung secara nirkabel." },
+            // MC 34
+            { q: "Simbol yang membatasi antara nama pengguna (username) dengan nama penyedia layanan email adalah...", options: ["#", "$", "&", "@"], answer: 3, exp: "Simbol @ (at) digunakan sebagai pemisah identitas pengguna dan penyedia layanan domain e-mail." },
+            // MC 35
+            { q: "Sebuah wadah di memori komputer yang digunakan untuk menyimpan nilai data yang dapat berubah selama program berjalan adalah...", options: ["Variabel", "Konstanta", "Fungsi", "Sintaks"], answer: 0, exp: "Variabel adalah nama representasi memori penyimpanan yang nilai datanya bersifat dinamis (dapat diubah)." },
+            // MC 36
+            { q: "Kepanjangan dari istilah URL di internet adalah...", options: ["Universal Resource Locator", "Uniform Resource Locator", "Unified Resource Link", "User Resource Line"], answer: 1, exp: "URL kepanjangan dari Uniform Resource Locator, yaitu rangkaian alamat rujukan spesifik objek digital di web." },
+            // MC 37
+            { q: "Fungsi dalam spreadsheet yang digunakan khusus untuk menghitung jumlah total baris/sel berisi angka adalah...", options: ["COUNT", "SUM", "AVERAGE", "IF"], answer: 0, exp: "COUNT menghitung banyaknya sel/baris data numerik, sedangkan SUM menjumlahkan nilai angka di dalamnya." },
+            // MC 38
+            { q: "Tindakan yang paling aman bila Anda menerima tautan promosi tidak dikenal dari grup obrolan adalah...", options: ["Langsung mengeklik tautan tersebut", "Mengabaikan tautan tersebut dan menghapusnya", "Membagikan tautan ke teman dekat", "Mengisi formulir login di dalam tautan tersebut"], answer: 1, exp: "Tautan tidak dikenal berisiko mengandung malware/phishing, langkah paling aman adalah mengabaikan atau menghapusnya." },
+            // MC 39
+            { q: "Papan induk sirkuit elektronik utama yang mengintegrasikan semua komponen perangkat keras komputer adalah...", options: ["Harddisk", "RAM", "Motherboard", "VGA Card"], answer: 2, exp: "Motherboard (papan induk) menyatukan CPU, RAM, penyimpanan, dan komponen internal lainnya." },
+            // MC 40
+            { q: "Dalam dunia coding, simbol perbandingan yang berarti 'Tidak Sama Dengan' ditandai dengan...", options: ["==", ">=", "<=", "!="], answer: 3, exp: "Simbol != merepresentasikan nilai perbandingan ketidaksamaan (not equal to)." },
+            
+            // SOAL 45: SOAL MENCOCOKKAN 5 (PORT DAN KONEKTOR FISIK KOMPUTER)
+            {
+                type: "matching",
+                q: "Cocokkan nama tipe port eksternal komputer berikut dengan fungsinya secara fisik!",
+                leftItems: ["Port HDMI", "Port USB", "Port RJ-45 (LAN)"],
+                rightOptions: ["Menyambungkan konektor kabel jaringan Ethernet lokal", "Mengirimkan output video digital & audio resolusi tinggi", "Menghubungkan periferal umum (mouse, flashdisk) secara universal"],
+                correctMap: [1, 2, 0],
+                exp: "HDMI menyalurkan audio-video HD ke monitor/TV. USB menyambung periferal secara universal. RJ-45 mengunci koneksi kabel internet LAN."
+            },
+            
+            // MC 41
+            { q: "Untuk meratakan teks dokumen agar rata di kanan sekaligus rata di kiri dalam MS Word, kita menggunakan...", options: ["Align Left", "Align Right", "Center", "Justify"], answer: 3, exp: "Justify mengatur margin paragraf rata di batas kiri maupun batas kanan tulisan." },
+            // MC 42
+            { q: "Jenis jaringan berskala lokal yang biasa terpasang dalam ruang laboratorium komputer sekolah adalah...", options: ["LAN", "MAN", "WAN", "PAN"], answer: 0, exp: "LAN (Local Area Network) didesain untuk area terbatas seperti satu ruangan, rumah, atau gedung." },
+            // MC 43
+            { q: "Layanan penyimpanan data digital yang diletakkan di server internet jarak jauh (online) disebut...", options: ["Harddisk Internal", "Cloud Storage", "Flashdisk", "RAM"], answer: 1, exp: "Cloud Storage adalah teknologi penyimpanan data berbasis cloud internet (seperti Google Drive)." },
+            // MC 44
+            { q: "Aturan dan etika kesopanan saat berinteraksi di dunia digital atau internet sering dikenal dengan istilah...", options: ["Netizen", "Cyberlaw", "Netiquette", "Ethical Hacking"], answer: 2, exp: "Netiquette (Network Etiquette) mengatur tata krama, kesantunan, dan etika berkomunikasi online." },
+            // MC 45
+            { q: "Kesalahan program yang terjadi akibat kekeliruan logika pembuatnya sehingga hasil keluaran salah disebut...", options: ["Syntax Error", "Logic Error", "Runtime Error", "Compilation Error"], answer: 1, exp: "Logic Error terjadi saat kode berjalan lancar tanpa terhenti, namun hasil perhitungan tidak sesuai akibat salah logika." }
+        ];
+
+        // ==============================================================================
+        // STATE / VARIABEL KONTROL APLIKASI
+        // ==============================================================================
+        let studentData = { name: "", class: "" };
+        let answers = new Array(questionsData.length).fill(null);
+        let currentQuestion = 0;
+        
+        let timerInterval;
+        let timeLeft = 90 * 60; // 90 menit dalam detik (5400)
+        let warnings = 0;
+        const maxWarnings = 3;
+        let isExamActive = false;
+
+        const labels = ['A', 'B', 'C', 'D'];
+
+        // DOM Elements
+        const elLogin = document.getElementById('login-screen');
+        const elExam = document.getElementById('exam-screen');
+        const elResult = document.getElementById('result-screen');
+        const elSidebar = document.getElementById('question-grid-sidebar');
+
+        // ==============================================================================
+        // FITUR DETEKSI ANTI KECURANGAN (TAB SWITCH & WINDOW FOCUS)
+        // ==============================================================================
+        document.addEventListener("visibilitychange", () => {
+            if (isExamActive && document.visibilityState === "hidden") {
+                triggerCheatWarning();
+            }
+        });
+
+        window.addEventListener("blur", () => {
+            if (isExamActive) {
+                triggerCheatWarning();
+            }
+        });
+
+        // Mencegah klik kanan untuk keamanan ekstra
+        document.addEventListener("contextmenu", (e) => {
+            e.preventDefault();
+        });
+
+        // ==============================================================================
+        // LOGIKA UTAMA APLIKASI
+        // ==============================================================================
+
+        function startExam() {
+            const nameInput = document.getElementById('student-name').value.trim();
+            const classInput = document.getElementById('student-class').value;
+
+            if (!nameInput || !classInput) {
+                showModal(
+                    `<span class="text-yellow-500 font-bold">Lengkapi Data</span>`, 
+                    "Silakan isi Nama Lengkap dan pilih Kelas Anda terlebih dahulu sebelum memulai ujian.", 
+                    [{text: "Mengerti", class: "bg-blue-600 text-white w-full"}]
+                );
+                return;
+            }
+
+            studentData.name = nameInput;
+            studentData.class = classInput;
+
+            // Meminta mode Fullscreen di browser demi memperketat ujian
+            if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log("Abaikan kesalahan layar penuh: ", err.message);
+                });
+            }
+
+            // Atur nama siswa & kelas di layar ujian
+            document.getElementById('display-name').innerText = studentData.name;
+            document.getElementById('display-class').innerText = "Kelas " + studentData.class;
+            
+            // Transisi Screen
+            elLogin.classList.add('hidden');
+            elLogin.classList.remove('flex');
+            elExam.classList.add('flex');
+            elExam.classList.remove('hidden');
+
+            isExamActive = true;
+            generateGrid();
+            renderQuestion(currentQuestion);
+            startTimer();
+        }
+
+        function startTimer() {
+            const display = document.getElementById('timer-display');
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                
+                let minutes = Math.floor(timeLeft / 60);
+                let seconds = timeLeft % 60;
+                
+                minutes = minutes < 10 ? "0" + minutes : minutes;
+                seconds = seconds < 10 ? "0" + seconds : seconds;
+                
+                display.innerText = minutes + ":" + seconds;
+
+                // Indikator sisa waktu kritis (5 menit terakhir)
+                if (timeLeft <= 300) {
+                    display.classList.remove('text-blue-700');
+                    display.classList.add('text-red-600', 'animate-pulse');
+                }
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    forceSubmit("Waktu Ujian Habis!", "Batas waktu 90 menit sudah berakhir. Jawaban Anda disimpan otomatis.");
+                }
+            }, 1000);
+        }
+
+        function triggerCheatWarning() {
+            warnings++;
+            document.getElementById('warn-count').innerText = warnings;
+
+            if (warnings >= maxWarnings) {
+                forceSubmit(
+                    `<span class="text-red-600 font-black">DISKUALIFIKASI!</span>`, 
+                    "Anda telah melebihi batas maksimal pelanggaran keluar dari jendela ujian (3 kali). Ujian dihentikan paksa."
+                );
+            } else {
+                showModal(
+                    `<span class="text-red-600 font-bold">⚠ Peringatan Kecurangan</span>`, 
+                    `Sistem mendeteksi Anda berganti tab atau meninggalkan halaman ujian!<br><b>Pelanggaran ke-${warnings} dari ${maxWarnings}</b>.<br><br><span class="text-xs text-red-500 font-bold">Peringatan: Jika melanggar lagi setelah batas maksimal tercapai, ujian akan diserahkan otomatis!</span>`, 
+                    [{text: "Saya Mengerti & Berjanji Jujur", class: "bg-red-600 text-white w-full"}]
+                );
+            }
+        }
+
+        function generateGrid() {
+            const grid = document.getElementById('grid-container');
+            grid.innerHTML = '';
+            for (let i = 0; i < questionsData.length; i++) {
+                const btn = document.createElement('button');
+                btn.id = 'grid-btn-' + i;
+                btn.className = `w-11 h-11 rounded-xl font-extrabold text-sm border flex items-center justify-center transition shadow-sm ${getGridColor(i)}`;
+                btn.innerText = i + 1;
+                btn.onclick = () => jumpToQuestion(i);
+                grid.appendChild(btn);
+            }
+        }
+
+        function isQuestionAnswered(index) {
+            const ans = answers[index];
+            const qData = questionsData[index];
+            if (qData.type === "matching") {
+                return Array.isArray(ans) && ans.length === qData.leftItems.length && ans.every(v => v !== null);
+            }
+            return ans !== null;
+        }
+
+        function getGridColor(index) {
+            if (index === currentQuestion) {
+                return 'bg-blue-600 text-white border-blue-700 ring-4 ring-blue-100';
+            }
+            if (isQuestionAnswered(index)) {
+                return 'bg-green-600 text-white border-green-700';
+            }
+            return 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50';
+        }
+
+        function updateGridUI() {
+            for (let i = 0; i < questionsData.length; i++) {
+                const btn = document.getElementById('grid-btn-' + i);
+                if (btn) btn.className = `w-11 h-11 rounded-xl font-extrabold text-sm border flex items-center justify-center transition shadow-sm ${getGridColor(i)}`;
+            }
+        }
+
+        function toggleGrid() {
+            if (elSidebar.classList.contains('translate-x-full')) {
+                elSidebar.classList.remove('translate-x-full');
+            } else {
+                elSidebar.classList.add('translate-x-full');
+            }
+        }
+
+        function renderQuestion(index) {
+            currentQuestion = index;
+            document.getElementById('current-q-num').innerText = index + 1;
+            
+            const qData = questionsData[index];
+            
+            // Handle Media Gambar (SVG)
+            const mediaContainer = document.getElementById('question-media-container');
+            if (qData.svg) {
+                mediaContainer.innerHTML = qData.svg;
+                mediaContainer.classList.remove('hidden');
+            } else {
+                mediaContainer.innerHTML = '';
+                mediaContainer.classList.add('hidden');
+            }
+
+            document.getElementById('question-text').innerHTML = qData.q;
+
+            const optsContainer = document.getElementById('options-container');
+            optsContainer.innerHTML = '';
+
+            if (qData.type === "matching") {
+                // RENDER SOAL COCOKKAN (MATCHING)
+                let savedAnswer = answers[index];
+                if (!Array.isArray(savedAnswer)) {
+                    savedAnswer = new Array(qData.leftItems.length).fill(null);
+                    answers[index] = savedAnswer;
+                }
+
+                let html = `<div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100 space-y-4">`;
+                
+                qData.leftItems.forEach((leftItem, leftIdx) => {
+                    html += `
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white p-3 rounded-lg border border-gray-200">
+                            <span class="font-bold text-gray-800 text-sm sm:text-base">${leftItem}</span>
+                            <div class="flex items-center gap-2">
+                                <span class="text-gray-400 hidden sm:inline">&rarr;</span>
+                                <select onchange="selectMatchingOption(${index}, ${leftIdx}, this.value)" class="w-full sm:w-64 px-3 py-2 border border-gray-300 rounded-lg text-xs md:text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-slate-50 font-medium">
+                                    <option value="">-- Pilih Karakteristik/Fungsi --</option>
+                                    ${qData.rightOptions.map((rightOpt, rightIdx) => {
+                                        const selected = savedAnswer[leftIdx] === rightIdx ? 'selected' : '';
+                                        return `<option value="${rightIdx}" ${selected}>${rightOpt}</option>`;
+                                    }).join('')}
+                                </select>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `</div>`;
+                optsContainer.insertAdjacentHTML('beforeend', html);
+
+            } else {
+                // RENDER PILIHAN GANDA BIASA
+                qData.options.forEach((opt, optIndex) => {
+                    const isChecked = answers[index] === optIndex ? 'checked' : '';
+                    const html = `
+                        <div class="relative">
+                            <input type="radio" name="q_option" id="opt_${optIndex}" value="${optIndex}" class="hidden option-input" onchange="selectOption(${index}, ${optIndex})" ${isChecked}>
+                            <label for="opt_${optIndex}" class="flex items-center p-3.5 md:p-4 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50/80 active:bg-gray-100 transition-all duration-150 shadow-sm">
+                                <span class="w-8 h-8 flex items-center justify-center bg-gray-100 text-gray-700 rounded-lg font-black text-sm mr-3 shrink-0 border border-gray-200">${labels[optIndex]}</span>
+                                <span class="text-sm md:text-base text-gray-700 font-medium">${opt}</span>
+                            </label>
+                        </div>
+                    `;
+                    optsContainer.insertAdjacentHTML('beforeend', html);
+                });
+            }
+
+            // Logika kontrol navigasi tombol footer
+            document.getElementById('btn-prev').disabled = index === 0;
+            
+            if (index === questionsData.length - 1) {
+                document.getElementById('btn-next').classList.add('hidden');
+                document.getElementById('btn-submit').classList.remove('hidden');
+            } else {
+                document.getElementById('btn-next').classList.remove('hidden');
+                document.getElementById('btn-submit').classList.add('hidden');
+            }
+
+            updateGridUI();
+        }
+
+        function selectOption(qIndex, optIndex) {
+            answers[qIndex] = optIndex;
+            updateGridUI();
+        }
+
+        function selectMatchingOption(qIndex, leftIdx, selectedValue) {
+            if (!Array.isArray(answers[qIndex])) {
+                answers[qIndex] = new Array(questionsData[qIndex].leftItems.length).fill(null);
+            }
+            answers[qIndex][leftIdx] = selectedValue === "" ? null : parseInt(selectedValue);
+            updateGridUI();
+        }
+
+        function nextQuestion() {
+            if (currentQuestion < questionsData.length - 1) {
+                renderQuestion(currentQuestion + 1);
+            }
+        }
+
+        function prevQuestion() {
+            if (currentQuestion > 0) {
+                renderQuestion(currentQuestion - 1);
+            }
+        }
+
+        function jumpToQuestion(index) {
+            renderQuestion(index);
+            // Tutup sidebar laci jika di ponsel pintar
+            if (window.innerWidth < 768) {
+                elSidebar.classList.add('translate-x-full');
+            }
+        }
+
+        function attemptSubmit() {
+            let unanswered = 0;
+            answers.forEach((ans, idx) => {
+                if (!isQuestionAnswered(idx)) {
+                    unanswered++;
+                }
+            });
+            
+            if (unanswered > 0) {
+                showModal(
+                    `<span class="text-red-600 font-bold">Ada Soal Belum Diisi</span>`, 
+                    `Terdapat <b>${unanswered}</b> soal yang belum dijawab dengan lengkap. Harap diperiksa lagi daftar navigasi soal sebelum mengirimkan ujian.`,
+                    [
+                        {text: "Kembali Mengerjakan", class: "bg-gray-500 text-white w-full sm:w-auto"},
+                        {text: "Tetap Kirimkan", class: "bg-red-600 text-white w-full sm:w-auto", action: processSubmission}
+                    ]
+                );
+            } else {
+                showModal(
+                    `<span class="text-green-600 font-bold">Kirim Jawaban Ujian?</span>`, 
+                    "Semua soal telah terjawab dengan lengkap. Apakah Anda yakin ingin menyelesaikan ujian dan mengirimkan jawaban Anda sekarang?",
+                    [
+                        {text: "Periksa Kembali", class: "bg-gray-200 text-gray-800 w-full sm:w-auto"},
+                        {text: "Ya, Selesai", class: "bg-blue-600 text-white w-full sm:w-auto", action: processSubmission}
+                    ]
+                );
+            }
+        }
+
+        function forceSubmit(title, desc) {
+            isExamActive = false;
+            clearInterval(timerInterval);
+            showModal(title, desc, [{text: "Lihat Lembar Hasil", class: "bg-blue-600 text-white w-full", action: processSubmission}]);
+        }
+
+        function processSubmission() {
+            isExamActive = false;
+            clearInterval(timerInterval);
+            closeModal();
+
+            // Hitung Score akhir
+            let correct = 0;
+            let wrong = 0;
+
+            answers.forEach((ans, idx) => {
+                const qData = questionsData[idx];
+                if (qData.type === "matching") {
+                    if (Array.isArray(ans) && ans.length === qData.correctMap.length && ans.every((v, i) => v === qData.correctMap[i])) {
+                        correct++;
+                    } else {
+                        wrong++;
+                    }
+                } else {
+                    if (ans === qData.answer) {
+                        correct++;
+                    } else {
+                        wrong++;
+                    }
+                }
+            });
+
+            // Nilai Akhir: Jumlah Benar * 2 (Skor Maksimal 100)
+            const score = correct * 2;
+
+            // Navigasi ke Layar Hasil
+            elExam.classList.add('hidden');
+            elExam.classList.remove('flex');
+            elResult.classList.remove('hidden');
+            elResult.classList.add('block');
+
+            // Render statistik hasil
+            document.getElementById('res-identity').innerText = `${studentData.name} (Kelas ${studentData.class})`;
+            document.getElementById('res-correct').innerText = correct;
+            document.getElementById('res-wrong').innerText = wrong;
+            document.getElementById('res-score').innerText = score;
+
+            // Kirim data secara asinkron ke Google Sheets
+            sendDataToGoogleSheet(correct, wrong, score);
+            renderReview();
+
+            // Keluar dari fullscreen jika aktif
+            if (document.exitFullscreen) {
+                document.exitFullscreen().catch(()=>{});
+            }
+        }
+
+        function renderReview() {
+            const container = document.getElementById('review-container');
+            container.innerHTML = '';
+
+            questionsData.forEach((q, i) => {
+                const userAns = answers[i];
+                let isCorrect = false;
+                let userText = "";
+                let correctText = "";
+
+                if (q.type === "matching") {
+                    // Validasi kecocokan seluruh map pencocokan
+                    isCorrect = Array.isArray(userAns) && userAns.every((v, idx) => v === q.correctMap[idx]);
+                    
+                    let userMatches = [];
+                    let correctMatches = [];
+                    
+                    q.leftItems.forEach((leftItem, leftIdx) => {
+                        const selectedVal = Array.isArray(userAns) ? userAns[leftIdx] : null;
+                        const correctVal = q.correctMap[leftIdx];
+                        
+                        userMatches.push(`<b>${leftItem}</b> &rarr; ${selectedVal !== null && selectedVal !== undefined ? q.rightOptions[selectedVal] : '<span class="text-red-500 italic">[Kosong]</span>'}`);
+                        correctMatches.push(`<b>${leftItem}</b> &rarr; ${q.rightOptions[correctVal]}`);
+                    });
+
+                    userText = `<div class="pl-4 border-l-2 border-slate-200 py-1 space-y-1 text-xs md:text-sm">${userMatches.join("<br>")}</div>`;
+                    correctText = `<div class="pl-4 border-l-2 border-slate-200 py-1 space-y-1 text-xs md:text-sm">${correctMatches.join("<br>")}</div>`;
+
+                } else {
+                    isCorrect = userAns === q.answer;
+                    userText = userAns !== null ? `${labels[userAns]}. ${q.options[userAns]}` : `<span class="italic text-gray-400">Tidak dijawab</span>`;
+                    correctText = `${labels[q.answer]}. ${q.options[q.answer]}`;
+                }
+
+                // Inject diagram mini di panel pembahasan jika ada
+                let miniMedia = "";
+                if (q.svg) {
+                    miniMedia = `<div class="my-2 bg-slate-50 p-2 rounded border border-slate-100 max-w-[150px] flex justify-center scale-90 origin-left">${q.svg}</div>`;
+                }
+
+                const html = `
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border-l-8 ${isCorrect ? 'border-green-500' : 'border-red-500'}">
+                        <div class="flex items-start gap-3">
+                            <span class="flex-shrink-0 w-8 h-8 rounded-lg ${isCorrect ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'} font-black flex items-center justify-center text-sm border">
+                                ${i + 1}
+                            </span>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-gray-900 font-bold mb-1 leading-relaxed">${q.q}</p>
+                                ${miniMedia}
+                                <div class="text-xs md:text-sm space-y-2 my-3">
+                                    <div>
+                                        <p class="text-gray-500 text-xs font-semibold uppercase">Jawaban Anda:</p>
+                                        <p class="${isCorrect ? 'text-green-600 font-medium' : 'text-red-600 font-bold'}">${userText}</p>
+                                    </div>
+                                    ${!isCorrect ? `
+                                    <div>
+                                        <p class="text-gray-500 text-xs font-semibold uppercase">Kunci Jawaban Tepat:</p>
+                                        <p class="text-green-600 font-bold">${correctText}</p>
+                                    </div>` : ''}
+                                </div>
+                                <div class="bg-blue-50/50 p-3.5 rounded-xl border border-blue-100 text-xs md:text-sm text-blue-900 leading-relaxed">
+                                    <strong class="text-blue-900 block mb-1">Alasan Pembahasan:</strong> ${q.exp}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', html);
+            });
+        }
+
+        // ==============================================================================
+        // KONEKSI DATABASE API GOOGLE SPREADSHEETS
+        // ==============================================================================
+        function sendDataToGoogleSheet(benar, salah, nilai) {
+            const statusEl = document.getElementById('sync-status');
+            
+            if (!SCRIPT_URL) {
+                statusEl.innerHTML = `⚠️ Gagal Menyimpan: URL Google Script belum dipasang!`;
+                statusEl.className = "inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-red-100 text-red-800 text-xs font-bold";
+                return;
+            }
+
+            const payload = {
+                nama: studentData.name,
+                kelas: studentData.class,
+                benar: benar,
+                salah: salah,
+                nilai: nilai
+            };
+
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors', // Penting untuk memotong isu CORS dari browser lokal
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(() => {
+                statusEl.innerHTML = `
+                    <svg class="w-4 h-4 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    Data Berhasil Disimpan ke Google Sheets.
+                `;
+                statusEl.className = "inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-green-100 text-green-800 text-xs font-bold";
+            })
+            .catch(error => {
+                statusEl.innerHTML = `⚠️ Gagal menyimpan ke sistem cloud database.`;
+                statusEl.className = "inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-red-100 text-red-800 text-xs font-bold";
+                console.error('Error saat menyimpan ke Spreadsheet:', error.message);
+            });
+        }
+
+        // ==============================================================================
+        // MODAL UTILITY
+        // ==============================================================================
+        function showModal(title, desc, buttons) {
+            const modal = document.getElementById('modal-overlay');
+            document.getElementById('modal-title').innerHTML = title;
+            document.getElementById('modal-desc').innerHTML = desc;
+            
+            const actionContainer = document.getElementById('modal-actions');
+            actionContainer.innerHTML = '';
+
+            const iconContainer = document.getElementById('modal-icon');
+            iconContainer.innerHTML = `
+                <div class="w-12 h-12 bg-red-50 border border-red-100 rounded-full flex items-center justify-center text-red-500">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                </div>
+            `;
+
+            buttons.forEach(btn => {
+                const b = document.createElement('button');
+                b.className = `px-5 py-2.5 rounded-xl font-bold text-sm transition ${btn.class}`;
+                b.innerHTML = btn.text;
+                b.onclick = () => {
+                    if (btn.action) { btn.action(); } 
+                    else { closeModal(); }
+                };
+                actionContainer.appendChild(b);
+            });
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('modal-overlay').classList.add('hidden');
+        }
+
+    </script>
+</body>
+</html>
